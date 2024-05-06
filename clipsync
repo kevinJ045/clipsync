@@ -51,7 +51,7 @@ server.listen(port, () => {
 const handleWlPaste = () => {
     syncMachines.forEach((ip) => {
         const url = `http://${ip}:${port}`;
-        const command = `wl-paste --watch sh -c "if [ -f ${lockFilePath} ]; then rm -f ${lockFilePath}; curl -X POST ${url} -d '$(wl-paste)'; fi"`;
+        const command = `wl-paste --watch sh -c "if [ -f ${lockFilePath} ]; then rm -f ${lockFilePath}; else curl -X POST ${url} -d '$(wl-paste)'; fi"`;
         
         spawn('sh', ['-c', command], {
             stdio: 'inherit',
