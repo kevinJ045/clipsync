@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const http = require('http');
 const { spawn } = require('child_process');
 
