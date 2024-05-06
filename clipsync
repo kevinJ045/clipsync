@@ -6,6 +6,8 @@ const args = process.argv.slice(2);
 let port = null;
 let syncMachines = [];
 
+const lockFilePath = '/tmp/clipcync-lock';
+
 for (let i = 0; i < args.length; i++) {
     if (args[i] === '-p' && i + 1 < args.length) {
         port = parseInt(args[++i], 10);
@@ -26,16 +28,15 @@ const handleRequest = (req, res) => {
     });
 
     req.on('end', () => {
-        const originHeader = req.headers['x-origin'];
-
+        const fs = require('fs');
+       	fs.writeFileSync(lockFilePath, 'lock');
         
-        if (!originHeader || originHeader !== 'SyncMachine') {
-            const wlCopy = spawn('wl-copy');
 
-            wlCopy.stdin.write(body);
-            wlCopy.stdin.end();
-        }
+        const wlCopy = spawn('wl-copy');
 
+        wlCopy.stdin.write(body);
+        wlCopy.stdin.end();
+        
         res.statusCode = 200;
         res.end('Copied To Clipboard\n');
     });
@@ -50,8 +51,8 @@ server.listen(port, () => {
 const handleWlPaste = () => {
     syncMachines.forEach((ip) => {
         const url = `http://${ip}:${port}`;
-        const command = `wl-paste --watch sh -c "curl -X POST ${url} -d '$(wl-paste)' --header 'X-Origin: SyncMachine'"`;
-
+        const command = `wl-paste --watch sh -c "if [ -f ${lockFilePath} ]; then rm -f ${lockFilePath}; curl -X POST ${url} -d '$(wl-paste)'; fi"`;
+        
         spawn('sh', ['-c', command], {
             stdio: 'inherit',
         });
