@@ -15,7 +15,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (port === null || syncMachines.length === 0) {
-    console.error('Usage: ./script_name -p <port> <sync_machine_ip> [...]');
+    console.error('Usage: clipsync -p <port> <sync_machine_ip> [...]');
     process.exit(1);
 }
 
@@ -26,10 +26,15 @@ const handleRequest = (req, res) => {
     });
 
     req.on('end', () => {
-        const wlCopy = spawn('wl-copy');
+        const originHeader = req.headers['x-origin'];
 
-        wlCopy.stdin.write(body);
-        wlCopy.stdin.end();
+        
+        if (!originHeader || originHeader !== 'SyncMachine') {
+            const wlCopy = spawn('wl-copy');
+
+            wlCopy.stdin.write(body);
+            wlCopy.stdin.end();
+        }
 
         res.statusCode = 200;
         res.end('Copied To Clipboard\n');
@@ -45,7 +50,7 @@ server.listen(port, () => {
 const handleWlPaste = () => {
     syncMachines.forEach((ip) => {
         const url = `http://${ip}:${port}`;
-        const command = `wl-paste --watch sh -c "curl -X POST ${url} -d '$(wl-paste)'"`;
+        const command = `wl-paste --watch sh -c "curl -X POST ${url} -d '$(wl-paste)' --header 'X-Origin: SyncMachine'"`;
 
         spawn('sh', ['-c', command], {
             stdio: 'inherit',
